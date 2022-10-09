@@ -50,6 +50,7 @@ int main(int argc, char** argv) {
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
   int world_size;
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+  double total_mpi_time = 0.0;
 
   // Create a random array of elements on the root process. Its total
   // size will be the number of elements per process times the number
@@ -64,6 +65,8 @@ int main(int argc, char** argv) {
   float *sub_rand_nums = (float *)malloc(sizeof(float) * num_elements_per_proc);
   assert(sub_rand_nums != NULL);
 
+  // Start the time counter
+  total_mpi_time -= MPI_Wtime();
   // Scatter the random numbers from the root process to all processes in
   // the MPI world
   MPI_Scatter(rand_nums, num_elements_per_proc, MPI_FLOAT, sub_rand_nums,
@@ -92,5 +95,11 @@ int main(int argc, char** argv) {
   free(sub_rand_nums);
 
   MPI_Barrier(MPI_COMM_WORLD);
+  // Stop the time counter
+  total_mpi_time += MPI_Wtime();
+  if (world_rank == 0) {
+    // Printoff the time counter
+    printf("Counted time = %lf\n", total_mpi_time);
+  }
   MPI_Finalize();
 }

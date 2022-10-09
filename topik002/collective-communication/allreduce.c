@@ -39,6 +39,7 @@ int main(int argc, char** argv) {
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
   int world_size;
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+  double total_mpi_time = 0.0;
 
   // Create a random array of elements on all processes.
   srand(time(NULL)*world_rank); // Seed the random number generator of processes uniquely
@@ -52,6 +53,8 @@ int main(int argc, char** argv) {
     local_sum += rand_nums[i];
   }
 
+  // Start the time counter
+  total_mpi_time -= MPI_Wtime();
   // Reduce all of the local sums into the global sum in order to
   // calculate the mean
   float global_sum;
@@ -83,5 +86,12 @@ int main(int argc, char** argv) {
   free(rand_nums);
 
   MPI_Barrier(MPI_COMM_WORLD);
+  // Stop the time counter
+  total_mpi_time += MPI_Wtime();
+  if (world_rank == 0) {
+    // Printoff the time counter
+    printf("Counted time = %lf\n", total_mpi_time);
+  }
+
   MPI_Finalize();
 }
