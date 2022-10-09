@@ -142,6 +142,7 @@ int main(int argc, char** argv) {
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
   int world_size;
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+  double total_mpi_time = 0.0;
 
   // Seed the random number generator to get different results each time
   srand(time(NULL) * world_rank);
@@ -150,6 +151,8 @@ int main(int argc, char** argv) {
   // will be between 0 and 1
   float *rand_nums = create_random_numbers(numbers_per_proc);
 
+  // Start the time counter
+  total_mpi_time -= MPI_Wtime();
   // Given the array of random numbers, determine how many will be sent
   // to each process (based on the which process owns the number).
   // The return value from this function is an array of counts
@@ -197,6 +200,12 @@ int main(int argc, char** argv) {
   verify_bin_nums(binned_nums, total_recv_amount, world_rank, world_size);
 
   MPI_Barrier(MPI_COMM_WORLD);
+  // Stop the time counter
+  total_mpi_time += MPI_Wtime();
+  if (world_rank == 0) {
+    // Printoff the time counter
+    printf("Counted time = %lf\n", total_mpi_time);
+  }
   MPI_Finalize();
 
   // Clean up
