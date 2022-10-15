@@ -4,7 +4,7 @@
 
 
 #include "mpi.h"
-#define N                 2000      /* number of rows and columns in matrix */
+#define N                 256      /* number of rows and columns in matrix */
 #include <time.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -19,26 +19,29 @@ main(int argc, char **argv)
 {
   int numtasks,taskid,numworkers,source,dest,rows,offset,i,j,k;
 
-  struct timeval start, stop;
+  
 
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &taskid);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 
   numworkers = numtasks-1;
+ 
 
-  /*---------------------------- master ----------------------------*/
-  if (taskid == 0) {
-    for (i=0; i<N; i++) {
+for (i=0; i<N; i++) {
       for (j=0; j<N; j++) {
         a[i][j]= 1.0;
         b[i][j]= 2.0;
       }
     }
+   double tscom1 = MPI_Wtime();
+  /*---------------------------- master ----------------------------*/
+  if (taskid == 0) {
+    
 
-    gettimeofday(&start, 0);
 
     /* send matrix data to the worker tasks */
+   
     rows = N/numworkers;
     offset = 0;
 
@@ -51,28 +54,18 @@ main(int argc, char **argv)
       offset = offset + rows;
     }
 
+   
     /* wait for results from all worker tasks */
-    for (i=1; i<=numworkers; i++)
-    {
-      source = i;
-      MPI_Recv(&offset, 1, MPI_INT, source, 2, MPI_COMM_WORLD, &status);
-      MPI_Recv(&rows, 1, MPI_INT, source, 2, MPI_COMM_WORLD, &status);
-      MPI_Recv(&c[offset][0], rows*N, MPI_DOUBLE, source, 2, MPI_COMM_WORLD, &status);
-    }
+    
 
-    gettimeofday(&stop, 0);
+   
 
-    printf("Here is the result matrix:\n");
-    /*for (i=0; i<N; i++) {
-      for (j=0; j<N; j++)
-        printf("%6.2f   ", c[i][j]);
-      printf ("\n");
-    }*/
-
-    fprintf(stdout,"Time = %.6f\n\n",
-         (stop.tv_sec+stop.tv_usec*1e-6)-(start.tv_sec+start.tv_usec*1e-6));
+    
 
   }
+
+  double tfcom1 = MPI_Wtime();
+	double tsop = MPI_Wtime();
 
   /*---------------------------- worker----------------------------*/
   if (taskid > 0) {
@@ -95,6 +88,43 @@ main(int argc, char **argv)
     MPI_Send(&rows, 1, MPI_INT, 0, 2, MPI_COMM_WORLD);
     MPI_Send(&c, rows*N, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD);
   }
+  double tfop = MPI_Wtime();
+	double tscom2 = MPI_Wtime();
+
+
+  /// recv func
+   if (taskid == 0) {
+  for (i=1; i<=numworkers; i++)
+    {
+      source = i;
+      MPI_Recv(&offset, 1, MPI_INT, source, 2, MPI_COMM_WORLD, &status);
+      MPI_Recv(&rows, 1, MPI_INT, source, 2, MPI_COMM_WORLD, &status);
+      MPI_Recv(&c[offset][0], rows*N, MPI_DOUBLE, source, 2, MPI_COMM_WORLD, &status);
+    }
+   }
+  double tfcom2 = MPI_Wtime();
+
+  if (taskid == 0) {
+		float com_time = (tfcom1-tscom1) + (tfcom2-tscom2);
+		float ops_time = tfop - tsop;
+		float total_time = com_time + ops_time;
+
+		printf("Communication time: %f\n", com_time);
+		printf("Operations time: %f\n", ops_time);
+		printf("Total time: %f\n", total_time);
+
+		FILE *f;
+		if (access("results.csv", F_OK) == -1) {
+ 			f = fopen("results.csv", "a");
+			fprintf(f, "Communication-time;Operations-time;Total-time;\n");
+		}
+		else {
+			f = fopen("results.csv", "a");
+		}
+
+		fprintf(f, "%f;%f;%f;\n",  com_time, ops_time, total_time);
+		fclose(f);
+	}
 
   MPI_Finalize();
 }
