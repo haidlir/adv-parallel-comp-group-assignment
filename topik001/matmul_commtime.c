@@ -4,7 +4,7 @@
 
 
 #include "mpi.h"
-//#define N                 256      /* number of rows and columns in matrix */
+#define N 1024      /* number of rows and columns in matrix */
 #include <time.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -16,16 +16,16 @@ MPI_Status status;
 
 
 
-int main(int argc, char *argv[1])
+int main(int argc, char **argv)
 {
-  int numtasks,taskid,numworkers,source,dest,rows,offset,i,j,k,N;
+  int numtasks,taskid,numworkers,source,dest,rows,offset,i,j,k;
 
   
 
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &taskid);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
-  N = atoi(argv[1]);
+  //N = atoi(argv[1]);
   double a[N][N],b[N][N],c[N][N];
   numworkers = numtasks-1;
  
