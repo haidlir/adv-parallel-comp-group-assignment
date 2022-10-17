@@ -77,7 +77,7 @@ for (i=0; i<N; i++) {
 
   double tfcom1 = MPI_Wtime();
 	double tsop = MPI_Wtime();
-  printf("start op time: %f\n", tsop);
+  //printf("start op time: %f\n", tsop);
   /*---------------------------- worker----------------------------*/
   if (taskid > 0) {
    for (k=0; k<N; k++)
@@ -88,7 +88,8 @@ for (i=0; i<N; i++) {
       }
   }
   double tfop = MPI_Wtime();
-  printf("end op time: %f\n", tfop);
+  //printf("end op time: %f\n", tfop);
+  printf("process %d op time = %f\n",taskid,(tfop-tsop));
 	double tscom2 = MPI_Wtime();
 
 
