@@ -4,27 +4,29 @@
 
 
 #include "mpi.h"
-#define N                 256      /* number of rows and columns in matrix */
+//#define N                 256      /* number of rows and columns in matrix */
 #include <time.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <mpi.h>
 MPI_Status status;
 
-double a[N][N],b[N][N],c[N][N];
 
-main(int argc, char **argv)
+
+int main(int argc, char *argv[1])
 {
-  int numtasks,taskid,numworkers,source,dest,rows,offset,i,j,k;
+  int numtasks,taskid,numworkers,source,dest,rows,offset,i,j,k,N;
 
   
 
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &taskid);
-  MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
-
+  MPI_Comm_size(MPI_COMM_WORLD, &numteasks);
+  N = atoi(argv[1]);
+  double a[N][N],b[N][N],c[N][N];
   numworkers = numtasks-1;
  
 
@@ -62,13 +64,7 @@ for (i=0; i<N; i++) {
 
     
 
-  }
-
-  double tfcom1 = MPI_Wtime();
-	double tsop = MPI_Wtime();
-
-  /*---------------------------- worker----------------------------*/
-  if (taskid > 0) {
+  } else{
     source = 0;
     MPI_Recv(&offset, 1, MPI_INT, source, 1, MPI_COMM_WORLD, &status);
     MPI_Recv(&rows, 1, MPI_INT, source, 1, MPI_COMM_WORLD, &status);
@@ -76,19 +72,23 @@ for (i=0; i<N; i++) {
     MPI_Recv(&b, N*N, MPI_DOUBLE, source, 1, MPI_COMM_WORLD, &status);
 
     /* Matrix multiplication */
-    for (k=0; k<N; k++)
+    
+  }
+
+  double tfcom1 = MPI_Wtime();
+	double tsop = MPI_Wtime();
+  printf("start op time: %f\n", tsop);
+  /*---------------------------- worker----------------------------*/
+  if (taskid > 0) {
+   for (k=0; k<N; k++)
       for (i=0; i<rows; i++) {
         c[i][k] = 0.0;
         for (j=0; j<N; j++)
           c[i][k] = c[i][k] + a[i][j] * b[j][k];
       }
-
-
-    MPI_Send(&offset, 1, MPI_INT, 0, 2, MPI_COMM_WORLD);
-    MPI_Send(&rows, 1, MPI_INT, 0, 2, MPI_COMM_WORLD);
-    MPI_Send(&c, rows*N, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD);
   }
   double tfop = MPI_Wtime();
+  printf("end op time: %f\n", tfop);
 	double tscom2 = MPI_Wtime();
 
 
@@ -101,6 +101,10 @@ for (i=0; i<N; i++) {
       MPI_Recv(&rows, 1, MPI_INT, source, 2, MPI_COMM_WORLD, &status);
       MPI_Recv(&c[offset][0], rows*N, MPI_DOUBLE, source, 2, MPI_COMM_WORLD, &status);
     }
+   }else{
+    MPI_Send(&offset, 1, MPI_INT, 0, 2, MPI_COMM_WORLD);
+    MPI_Send(&rows, 1, MPI_INT, 0, 2, MPI_COMM_WORLD);
+    MPI_Send(&c, rows*N, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD);
    }
   double tfcom2 = MPI_Wtime();
 
@@ -127,4 +131,5 @@ for (i=0; i<N; i++) {
 	}
 
   MPI_Finalize();
+  return 0;
 }
