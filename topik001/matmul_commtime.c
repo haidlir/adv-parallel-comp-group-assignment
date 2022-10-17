@@ -24,7 +24,7 @@ int main(int argc, char *argv[1])
 
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &taskid);
-  MPI_Comm_size(MPI_COMM_WORLD, &numteasks);
+  MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
   N = atoi(argv[1]);
   double a[N][N],b[N][N],c[N][N];
   numworkers = numtasks-1;
