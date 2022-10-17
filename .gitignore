@@ -1,2 +1,11 @@
 # Compiled files
 *.o
+
+# Compressed files
+*.rar
+
+# Folders
+venv
+__pycache__
+atari_roms
+logs
