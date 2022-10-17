@@ -89,7 +89,7 @@ for (i=0; i<N; i++) {
   }
   double tfop = MPI_Wtime();
   //printf("end op time: %f\n", tfop);
-  printf("%f\n",(tfop-tsop));
+  printf("%f;\n",(tfop-tsop));
 	double tscom2 = MPI_Wtime();
 
 
