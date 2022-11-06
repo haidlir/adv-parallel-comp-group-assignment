@@ -34,6 +34,6 @@ run_b:
 	./incrementArrays.o 1024 512
 	./incrementArrays.o 1024 1024
 	./incrementArrays.o 1024 2048
-	./incrementArrays.o 2096 512
-	./incrementArrays.o 2096 1024
-	./incrementArrays.o 2096 2048
+	./incrementArrays.o 2048 512
+	./incrementArrays.o 2048 1024
+	./incrementArrays.o 2048 2048
