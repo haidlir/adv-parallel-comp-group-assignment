@@ -249,7 +249,9 @@ int main(int argc, char** argv)
     // Launch kernel 
     printf(">> Num of Block = %d | Block Dim = %d |Matrix size = %d\n", nBlocks, blockSize, m);
     gpu_matrix_mult<<<dimGrid, dimBlock>>>(d_a, d_b, d_c, m);    
-
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) 
+    printf("Error: %s\n", cudaGetErrorString(err));
     // Transefr results from device to host 
     cudaMemcpy(h_c, d_c, sizeof(int)*m*m, cudaMemcpyDeviceToHost);
     cudaThreadSynchronize();
@@ -261,11 +263,14 @@ int main(int argc, char** argv)
     cudaEventElapsedTime(&gpu_elapsed_time_ms, start, stop);
     printf("Time elapsed on matrix multiplication of %dx%d . %dx%d on Parallel_GPU: %f ms.\n\n", m, m, m, m, gpu_elapsed_time_ms);
 
-    // start the CPU version
+    // start the sequential version
     cudaEventRecord(start, 0);
-    //dim3 seq_dimBlock(1, 1);
-    //dim3 seq_dimGrid(1, 1);
+    
+
     sequential_gpu_matrix_mult<<<1, 1>>>(d_a, d_b, d_c, m);    
+    cudaError_t err2 = cudaGetLastError();
+    if (err2 != cudaSuccess) 
+    printf("Error: %s\n", cudaGetErrorString(err2));
      // Transefr results from device to host 
     cudaMemcpy(h_c_seq, d_c, sizeof(int)*m*m, cudaMemcpyDeviceToHost);
     cudaThreadSynchronize();
@@ -285,6 +290,7 @@ int main(int argc, char** argv)
             //printf("[%d][%d]:%d == [%d][%d]:%d, ", i, j, h_c_seq[i*m + j], i, j, h_c[i*m + j]);
             if(h_c_seq[i*m + j] != h_c[i*m + j])
             {
+                printf("[%d][%d]:%d == [%d][%d]:%d, ", i, j, h_c_seq[i*m + j], i, j, h_c[i*m + j]);
                 all_ok = 0;
             }
         }
