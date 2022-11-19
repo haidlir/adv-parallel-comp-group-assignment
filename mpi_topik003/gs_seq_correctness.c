@@ -36,7 +36,7 @@ void allocate_init_2Dmatrix(float ***mat, int n, int m){
 	 for (i = 0; i < 4; i++) {
         for (j = 0; j < 4; j++) {
         
-        printf("%f \t", (*mat)[j][i]); //row major accessing with red color.
+        printf("%f \t", (*mat)[i][j]); //row major accessing with red color.
         
     }
 
@@ -58,6 +58,7 @@ void solver(float ***mat, int n, int m){
       }
     if (diff/n/n < TOL)
       done = 1; 
+    printf("diff : %f \n",diff);
     cnt_iter ++;
   }
 
@@ -70,7 +71,7 @@ void solver(float ***mat, int n, int m){
 	 for (i = 0; i < 4; i++) {
         for (j = 0; j < 4; j++) {
        
-       printf("%f \t", (*mat)[j][i]); //row major accessing with red color.
+       printf("%f \t", (*mat)[i][j]); //row major accessing with red color.
         }
     }
     }

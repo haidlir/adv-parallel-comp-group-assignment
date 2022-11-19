@@ -145,6 +145,7 @@ void solver(float **mat, int n, int num_elems) {
 		
 		if (diff/n/n < TOL) {
 			done = 1;
+			printf("diff : %f \n",diff);
 				printf("final matrix:\n");
 		print_matrix(*mat,n,n,n);
 			
