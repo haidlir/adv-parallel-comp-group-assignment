@@ -111,14 +111,18 @@ int main(int argc, char *argv[]) {
  printf(">> Num of Block = %d | Block Dim = %d |Matrix size = %d\n", grid_rows, blocksize, n);
   cudaMalloc(&d_diff, sizeof(float));
   cudaMemset(d_diff, 0, sizeof(float));
-  while ((cnt_iter < MAX_ITER) && ((h_diff/(n*n)) > TOL)) {
+  int done = 0;
+  while ((cnt_iter < MAX_ITER) && !done) {
     solver<<<DimGrid, DimBlock>>>(adi, ado, n, n, d_diff);
     cudaMemcpy(&h_diff, d_diff, sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemset(d_diff, 0, sizeof(float));
-    cnt_iter++;
+    printf("diff : %f \n ", h_diff);
     float **adt = adi; // ping-pong input and output buffers
     adi = ado;
     ado = adt;
+    if (h_diff/n/n < TOL)
+      done = 1;
+    cnt_iter++;
     }
   printf("cnt_iter = %d, diff = %f\n", cnt_iter, h_diff/(n*n));
   for (int i = 0; i < n; i++){
