@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #define MAX 100
-#define MAX_ITER 100
+#define MAX_ITER 13
 #define TOL 0.000001
 
 // Generate a random float number with the maximum value of max

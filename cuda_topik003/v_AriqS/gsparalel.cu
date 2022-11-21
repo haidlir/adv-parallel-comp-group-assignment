@@ -43,7 +43,7 @@ float rand_float(int max){
 
 
 
-__global__ void seq_solver(float *mat, int n, int m){
+__global__ void parallel_solver(float *mat, int n, int m){
   float diff = 0, temp;
 	int done = 0, cnt_iter = 0, myrank;
 
@@ -190,7 +190,7 @@ float *adevice;
   
   
     printf(">> Num of Block = 1 | Block Dim = 1 |Matrix size = %d\n", n);
-    seq_solver<<<1, 1>>>(adevice, n, n);
+    parallel_solver<<<1, 1>>>(adevice, n, n);
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) 
     printf("Error: %s\n", cudaGetErrorString(err));
