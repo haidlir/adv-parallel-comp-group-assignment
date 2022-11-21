@@ -46,13 +46,31 @@ float rand_float(int max){
 __global__ void parallel_solver(float *mat, int n, int m){
   float diff = 0, temp;
 	int done = 0, cnt_iter = 0, myrank;
+    int index = threadIdx.x;
+    int blockdim = blockDim.x;
+    int numperthread = n*n / blockdim;
+    
+     int startpoint,endpoint;
+    if(index == 0){
+        startpoint =  numperthread * index + n ;
+    }else{
+        startpoint = numperthread * index;
+    }
 
+    
+   if(index == (blockdim -1)){
+    printf("last thread ");
+    endpoint = (n*n) - n;
+   }else{
+   endpoint = numperthread * (index + 1) - 1;
+   }
+   printf(" number elements per thread = %d , thread index : %d , start at %d, end at %d \n",numperthread, index, startpoint , endpoint);
   	while (!done && (cnt_iter < MAX_ITER)) {
   		diff = 0;
 
   		// Neither the first row nor the last row are solved
   		// (that's why it starts at "n" and it goes up to "num_elems - 2n")
-  		for (int i = n; i < (n*n) - (2*n); i++) {
+  		for (int i = startpoint; i < endpoint ; i++) {
 
   			// Additionally, neither the first nor last column are solved
   			// (that's why the first and last positions of "rows" are skipped)
@@ -71,9 +89,10 @@ __global__ void parallel_solver(float *mat, int n, int m){
            
       	}
 		
-		 printf("diff : %f \n",diff);
-        int x, y;
+		 printf("iteration %d diff at thread %d : %f \n",cnt_iter, threadIdx.x, diff);
+      
   //print only 4*4 matrix.
+  /*
         printf("Printing only first 4 results \n");
         for (x = 0; x < 4; x++) {
              printf("\n");
@@ -81,7 +100,7 @@ __global__ void parallel_solver(float *mat, int n, int m){
                 
          printf("%lf \t", mat[((n * x) + y)]); //row major accessing with red color.
          }
-        }
+        }*/
 		if (diff/n/n < TOL) {
 			done = 1;
 			printf("diff : %f \n",diff);
@@ -98,6 +117,15 @@ __global__ void parallel_solver(float *mat, int n, int m){
 	}
 	else {
 		printf(" Solver not converged after %d iterations\n", cnt_iter);
+         printf("Printing only first 4 results \n");
+           int x, y;
+        for (x = 0; x < 4; x++) {
+             printf("\n");
+             for (y = 0; y < 4; y++) {
+                
+         printf("%lf \t", mat[((n * x) + y)]); //row major accessing with red color.
+         }
+        }
 	}
   }
 
@@ -190,7 +218,7 @@ float *adevice;
   
   
     printf(">> Num of Block = 1 | Block Dim = 1 |Matrix size = %d\n", n);
-    parallel_solver<<<1, 1>>>(adevice, n, n);
+    parallel_solver<<<1, blocksize>>>(adevice, n, n);
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) 
     printf("Error: %s\n", cudaGetErrorString(err));
