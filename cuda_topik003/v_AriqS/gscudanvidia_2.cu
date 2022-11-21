@@ -48,31 +48,31 @@ void allocate_init_2Dmatrix(float ***mat,  int n, int m){
 }
 
 // solver
-__global__ void solver(float **matd, int n, int m, bool debug){
+  __global__ void solver(float ***mat, int n, int m){
   float diff = 0, temp;
-  int done = 0, cnt_iter = 0;
- int j= blockIdx.x*blockDim.x + threadIdx.x;
- int i= blockIdx.y*blockDim.y + threadIdx.y;
- 
+  int done = 0, cnt_iter = 0, i, j;
+
   while (!done && (cnt_iter < MAX_ITER)){
     diff = 0;
-      if ((i < n - 1) && (j < m - 1) && (i > 0) && (j > 0)){
-       temp = (matd)[i][j];
-        (matd)[i][j] = 0.2 * ((matd)[i][j] + (matd)[i][j - 1] + (matd)[i - 1][j] + (matd)[i][j + 1] + (matd)[i + 1][j]);
-        diff += abs((matd)[i][j] - temp);
-  //      printf("diff:%f\n",diff);
+    for (i = 1; i < n - 1; i++)
+      for (j = 1; j < m - 1; j++){
+	temp = (*mat)[i][j];
+	(*mat)[i][j] = 0.2 * ((*mat)[i][j] + (*mat)[i][j - 1] + (*mat)[i - 1][j] + (*mat)[i][j + 1] + (*mat)[i + 1][j]);
+	diff += abs((*mat)[i][j] - temp);
       }
-
     if (diff/n/n < TOL)
-      done = 1;
+      done = 1; 
+    printf("diff : %f \n",diff);
     cnt_iter ++;
   }
-  if (debug){
-    if (done)
-      printf("Solver converged after %d iterations\n", cnt_iter);
-    else
-      printf("Solver not converged after %d iterations\n", cnt_iter);
-  }
+  
+
+
+  if (done){
+    printf("Solver converged after %d iterations\n", cnt_iter);
+    }
+  else{printf("Solver not converged after %d iterations\n", cnt_iter);}
+    
 }
 
 int main(int argc, char *argv[]) {
@@ -113,14 +113,20 @@ float gpu_elapsed_time_ms;
 }
 
 
-unsigned int grid_rows = (n + blocksize - 1) / blocksize;
+
   dim3 DimBlock(blocksize,blocksize);
-  dim3 DimGrid(grid_rows,grid_rows);
-solver<<<DimGrid, DimBlock>>>(ad, n, n,true);
-cudaMemcpy(a,ad,n*n*sizeof(float),cudaMemcpyDeviceToHost);
+  dim3 DimGrid(1,1);
+solver<<<1, 1>>>(&ad, n, n,true);
+cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) 
+    printf("Error: %s\n", cudaGetErrorString(err));
+cudaMemcpy(a,&ad,n*n*sizeof(float),cudaMemcpyDeviceToHost);
+cudaError_t err1 = cudaGetLastError();
+    if (err1 != cudaSuccess) 
+    printf("Error1: %s\n", cudaGetErrorString(err1));
 cudaFree(ad);
 
-printf(">> Num of Block = %d | Block Dim = %d |Matrix size = %d\n", grid_rows, blocksize, n);
+printf(">> Num of Block = 1 | Block Dim = 1 |Matrix size = %d\n", n);
  cudaThreadSynchronize();
     // time counting terminate
     cudaEventRecord(stop, 0);
