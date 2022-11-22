@@ -1,19 +1,13 @@
 # Reference: https://github.com/UesugiErii/tf2-mpi-ppo
-# mpirun -n 8 --oversubscribe --allow-run-as-root python3 run.py
+# Modified to run using GPU
 
-from mpi4py import MPI
 import numpy as np
 from datetime import datetime
 from atari_wrappers import *
 import gym
 import time
 
-comm = MPI.COMM_WORLD
-size = comm.Get_size()
-if size != 1 and size % 2 != 0:
-    print("size should be even number or one. exiting the program.")
-    print(quit())
-rank = comm.Get_rank()
+size = 1
 
 # placeholder
 send_state_buf = None  # use to send state
@@ -61,6 +55,8 @@ gamma = 0.99  # discount reward
 
 # print(f"epochs: {epochs} | size: {size} | batch_size: {batch_size}")
 
+# Pretending as master
+rank = 0
 # brain
 if rank == 0:
     #######################
@@ -113,8 +109,8 @@ if rank == 0:
     import os
 
     # os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
-    my_devices = tf.config.experimental.list_physical_devices(device_type='CPU')
-    tf.config.experimental.set_visible_devices(devices= my_devices, device_type='CPU')
+    # my_devices = tf.config.experimental.list_physical_devices(device_type='CPU')
+    # tf.config.experimental.set_visible_devices(devices= my_devices, device_type='CPU')
     from tensorflow.python.keras import Model
     from tensorflow.python.keras.layers import Dense, Conv2D, Flatten, LSTMCell
     import tensorflow.keras.optimizers as optim
@@ -291,7 +287,6 @@ if rank == 0:
     # Start time counter
     total_time_counter = 0
     total_time_counter -= time.time()
-    comm_time_counter = 0
 
     if use_RNN:
         model = RNNModel()
@@ -345,6 +340,7 @@ if rank == 0:
 
     state = np.array(env.reset(), dtype=np.float32)
     send_state_buf = state
+    recv_state_buf = np.expand_dims(state, axis=0)
 
     ###########################
     #      loop               #
@@ -353,9 +349,6 @@ if rank == 0:
     ###########################
 
     # first one
-    comm_time_counter -= time.time()
-    comm.Gather(send_state_buf, recv_state_buf, root=0)
-    comm_time_counter += time.time()
     total_state[0, :, :, :, :] = recv_state_buf
     remain_step -= 1
 
@@ -372,9 +365,6 @@ if rank == 0:
     # scattering action
     a = [np.random.choice(range(a_num), p=ap[i]) for i in range(size)]
     total_a[0, :] = a
-    comm_time_counter -= time.time()
-    a = comm.scatter(a, root=0)
-    comm_time_counter += time.time()
 
     # brain's env get first action
     state_, r, done, info = env.step(a)
@@ -385,18 +375,14 @@ if rank == 0:
     send_state_buf = state
 
     # recv other information
-    comm_time_counter -= time.time()
-    r = comm.gather(r, root=0)
     # print(f"r togather: {r}")
-    done = comm.gather(done, root=0)
-    info = comm.gather(info, root=0)
-    comm_time_counter += time.time()
 
     total_r[0, :] = np.array(r, dtype=np.float32)
     total_done[0, :] = np.array(done, dtype=np.float32)
     all_reward += r
     # print(f"done: {done}")
-    print(done)
+    done = [done]
+    info = [info]
     for i, is_done in enumerate(done):
         if is_done:
             tf.summary.scalar('reward', data=all_reward[i], step=one_episode_reward_index)
@@ -411,9 +397,6 @@ if rank == 0:
         # for epoch in range(1, epochs):
         for epoch in range(1, epochs//size):
             # recv state
-            comm_time_counter -= time.time()
-            comm.Gather(send_state_buf, recv_state_buf, root=0)
-            comm_time_counter += time.time()
             total_state[epoch, :, :, :, :] = recv_state_buf
             remain_step -= 1  # After every recv data minus 1
             if not remain_step:
@@ -433,9 +416,6 @@ if rank == 0:
             # scattering action
             a = [np.random.choice(range(a_num), p=ap[i]) for i in range(size)]
             total_a[epoch, :] = a
-            comm_time_counter -= time.time()
-            a = comm.scatter(a, root=0)
-            comm_time_counter += time.time()
 
             # brain's env step
             state_, r, done, info = env.step(a)
@@ -444,12 +424,9 @@ if rank == 0:
             state = np.array(state_, dtype=np.float32)
             send_state_buf = state
 
-            # recv other information
-            comm_time_counter -= time.time()
-            r = comm.gather(r, root=0)
-            done = comm.gather(done, root=0)
-            info = comm.gather(info, root=0)
-            comm_time_counter += time.time()
+            r = [r]
+            done = [done]
+            infor = [info]
 
             total_r[epoch, :] = np.array(r, dtype=np.float32)
             total_done[epoch, :] = np.array(done, dtype=np.float32)
@@ -471,9 +448,6 @@ if rank == 0:
             break  # leave while 1 loop
 
         # last one
-        comm_time_counter -= time.time()
-        comm.Gather(send_state_buf, recv_state_buf, root=0)
-        comm_time_counter += time.time()
         remain_step -= 1  # After every recv data minus 1
         # if now remain_step == 0, then exit after last learning
 
@@ -525,10 +499,8 @@ if rank == 0:
             print(f"avg duration per learning_step: {duration/20}")
             total_time_counter += time.time()
             print(f"total time duration for 20 learning step: {total_time_counter}")
-            print(f"comm time duration for 20 learning step: {comm_time_counter}")
-            comm.Abort()
-            MPI.Finalize()
             # break
+            quit()
 
 
         # 242.6518578529358
@@ -621,9 +593,6 @@ if rank == 0:
         # scattering action
         a = [np.random.choice(range(a_num), p=ap[i]) for i in range(size)]
         total_a[0, :] = a
-        comm_time_counter -= time.time()
-        a = comm.scatter(a, root=0)
-        comm_time_counter += time.time()
 
         # brain's env step
         state_, r, done, info = env.step(a)
@@ -632,12 +601,9 @@ if rank == 0:
         state = np.array(state_, dtype=np.float32)
         send_state_buf = state
 
-        # recv other information
-        comm_time_counter -= time.time()
-        r = comm.gather(r, root=0)
-        done = comm.gather(done, root=0)
-        info = comm.gather(info, root=0)
-        comm_time_counter += time.time()
+        r = [r]
+        done = [done]
+        infor = [info]
 
         total_r[0, :] = np.array(r, dtype=np.float32)
         total_done[0, :] = np.array(done, dtype=np.float32)
@@ -652,41 +618,5 @@ if rank == 0:
                 if use_RNN:
                     total_h[1, i, :] = 0
                     total_c[1, i, :] = 0
-
-# env
-else:
-
-    # random init
-    np.random.seed(rank)
-    env.seed(rank)
-
-    state = np.array(env.reset(), dtype=np.float32)
-    remain_step = total_step // size
-    while True:
-        # send state
-        send_state_buf = state
-        comm.Gather(send_state_buf, recv_state_buf, root=0)
-        remain_step -= 1  # After every send data minus 1
-        if not remain_step:
-            print(rank, 'finished')
-            break
-
-        # get action
-        a = comm.scatter(a, root=0)
-        # print(f"a: {a} | remain_step: {remain_step}")
-
-        state_, r, done, info = env.step(a)
-        state_ = np.array(state_, dtype=np.float32)
-
-        # Fix Bug: this should on send above
-        if done:
-            state_ = np.array(env.reset(), dtype=np.float32)
-
-        # send other information
-        r = comm.gather(r, root=0)
-        done = comm.gather(done, root=0)
-        info = comm.gather(info, root=0)
-
-        state = state_
 
         # TODO: test uint8 and float32 who faster
