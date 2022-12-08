@@ -59,12 +59,12 @@ __global__ void parallel_solver(float *mat, int n, int m){
 
     
    if(index == (blockdim -1)){
-    printf("last thread ");
+   // printf("last thread ");
     endpoint = (n*n) - n;
    }else{
    endpoint = numperthread * (index + 1) - 1;
    }
-   printf(" number elements per thread = %d , thread index : %d , start at %d, end at %d \n",numperthread, index, startpoint , endpoint);
+   //printf(" number elements per thread = %d , thread index : %d , start at %d, end at %d \n",numperthread, index, startpoint , endpoint);
   	while (!done && (cnt_iter < MAX_ITER)) {
   		diff = 0;
 
@@ -89,7 +89,7 @@ __global__ void parallel_solver(float *mat, int n, int m){
            
       	}
 		
-		 printf("iteration %d diff at thread %d : %f \n",cnt_iter, threadIdx.x, diff);
+		// printf("iteration %d diff at thread %d : %f \n",cnt_iter, threadIdx.x, diff);
       
   //print only 4*4 matrix.
   /*
@@ -103,7 +103,7 @@ __global__ void parallel_solver(float *mat, int n, int m){
         }*/
 		if (diff/n/n < TOL) {
 			done = 1;
-			printf("diff : %f \n",diff);
+			//printf("diff : %f \n",diff);
 			//print_matrix(*mat,n,n,n);
 			
 		}
@@ -112,11 +112,11 @@ __global__ void parallel_solver(float *mat, int n, int m){
 
 
 	if (done) {
-		printf("Solver converged after %d iterations\n", cnt_iter);
+		//printf("Solver converged after %d iterations\n", cnt_iter);
 
 	}
 	else {
-		printf(" Solver not converged after %d iterations\n", cnt_iter);
+	//	printf(" Solver not converged after %d iterations\n", cnt_iter);
          /*printf("Printing only first 4 results \n");
            int x, y;
         for (x = 0; x < 4; x++) {
