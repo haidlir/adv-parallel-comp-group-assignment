@@ -11,7 +11,7 @@ CUDA
 1. Topik 001 - Grid, Block, and Thread
 2. Topik 002 - Matrix Multiplication
 3. Topik 003 - Gauss Seidel Iteration
-4. Topik 004 - ......
+4. Topik 004 - Proximal Policy Optimization
 
 
 # References
